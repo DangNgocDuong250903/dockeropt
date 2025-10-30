@@ -1,0 +1,2 @@
+ cd ; 
+ python auto.py scripts start

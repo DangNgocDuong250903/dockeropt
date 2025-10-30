@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/static/manifest.json">
+    <title>Xray VPS Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .status-running {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status-stopped {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-title {
+            font-size: 0.9em;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .card-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .card-subtitle {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .chart-card {
+            grid-column: 1 / -1;
+            padding: 30px;
+        }
+        
+        .update-time {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Xray VPS Monitor</h1>
+            <div id="xray-status" class="status-badge">Loading...</div>
+            <p style="margin-top: 10px;">Hong Kong Server | Logged in as: <strong>{{ username }}</strong></p>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="/" style="color: white; margin: 0 10px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 5px; text-decoration: none;">📊 Dashboard</a>
+            <a href="/users" style="color: white; margin: 0 10px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 5px; text-decoration: none;">👥 Users</a>
+            <a href="/servers" style="color: white; margin: 0 10px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 5px; text-decoration: none;">🖥️ Servers</a>
+            <a href="/logs" style="color: white; margin: 0 10px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 5px; text-decoration: none;">📜 Logs</a>
+            <a href="/settings" style="color: white; margin: 0 10px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 5px; text-decoration: none;">⚙️ Settings</a>
+            <a href="/logout" style="color: white; margin: 0 10px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 5px; text-decoration: none;">🚪 Logout</a>
+        </div>
+        
+        <div class="grid">
+            <!-- Active Connections -->
+            <div class="card">
+                <div class="card-title">Active Connections</div>
+                <div class="card-value" id="connections">-</div>
+                <div class="card-subtitle">Connected clients</div>
+            </div>
+            
+            <!-- Bandwidth Sent -->
+            <div class="card">
+                <div class="card-title">Upload Total</div>
+                <div class="card-value" id="bandwidth-sent">-</div>
+                <div class="card-subtitle">GB transferred</div>
+            </div>
+            
+            <!-- Bandwidth Received -->
+            <div class="card">
+                <div class="card-title">Download Total</div>
+                <div class="card-value" id="bandwidth-recv">-</div>
+                <div class="card-subtitle">GB transferred</div>
+            </div>
+            
+            <!-- CPU Usage -->
+            <div class="card">
+                <div class="card-title">CPU Usage</div>
+                <div class="card-value" id="cpu">-</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="cpu-bar" style="width: 0%">0%</div>
+                </div>
+            </div>
+            
+            <!-- RAM Usage -->
+            <div class="card">
+                <div class="card-title">RAM Usage</div>
+                <div class="card-value" id="ram">-</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="ram-bar" style="width: 0%">0%</div>
+                </div>
+            </div>
+            
+            <!-- Disk Usage -->
+            <div class="card">
+                <div class="card-title">Disk Usage</div>
+                <div class="card-value" id="disk">-</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="disk-bar" style="width: 0%">0%</div>
+                </div>
+            </div>
+            
+            <!-- Uptime -->
+            <div class="card">
+                <div class="card-title">Server Uptime</div>
+                <div class="card-value" style="font-size: 1.8em" id="uptime">-</div>
+                <div class="card-subtitle">Days online</div>
+            </div>
+            
+            <!-- Speed Test -->
+            <div class="card">
+                <div class="card-title">⚡ Speed Test</div>
+                <button onclick="runSpeedTest()" id="speedtest-btn" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">Run Speed Test</button>
+                <div id="speedtest-result" style="margin-top: 15px; font-size: 0.9em;"></div>
+            </div>
+            
+            <!-- GeoIP Status -->
+            <div class="card">
+                <div class="card-title">🌍 GeoIP Blocking</div>
+                <div id="geoip-status" style="font-size: 0.9em;">Loading...</div>
+            </div>
+        </div>
+        
+        <!-- Bandwidth Chart -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>📈 Bandwidth Usage (Last 24 Hours)</h2>
+            <canvas id="bandwidthChart" height="80"></canvas>
+        </div>
+        
+        <div class="update-time">
+            Last update: <span id="update-time">-</span>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Access URL:</strong> http://34.150.92.64:8080</p>
+            <p style="margin-top: 10px;">Auto-refresh every 3 seconds</p>
+        </div>
+    </div>
+    
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <script>
+        function updateStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    // Xray Status
+                    const statusEl = document.getElementById('xray-status');
+                    if (data.xray_status === 'Running') {
+                        statusEl.textContent = '✅ Xray Running';
+                        statusEl.className = 'status-badge status-running';
+                    } else {
+                        statusEl.textContent = '❌ Xray Stopped';
+                        statusEl.className = 'status-badge status-stopped';
+                    }
+                    
+                    // Connections
+                    document.getElementById('connections').textContent = data.connections;
+                    
+                    // Bandwidth
+                    document.getElementById('bandwidth-sent').textContent = data.bandwidth.sent_gb + ' GB';
+                    document.getElementById('bandwidth-recv').textContent = data.bandwidth.recv_gb + ' GB';
+                    
+                    // CPU
+                    document.getElementById('cpu').textContent = data.system.cpu + '%';
+                    const cpuBar = document.getElementById('cpu-bar');
+                    cpuBar.style.width = data.system.cpu + '%';
+                    cpuBar.textContent = data.system.cpu + '%';
+                    
+                    // RAM
+                    document.getElementById('ram').textContent = 
+                        data.system.ram_used + ' / ' + data.system.ram_total + ' GB';
+                    const ramBar = document.getElementById('ram-bar');
+                    ramBar.style.width = data.system.ram_percent + '%';
+                    ramBar.textContent = data.system.ram_percent + '%';
+                    
+                    // Disk
+                    document.getElementById('disk').textContent = 
+                        data.system.disk_used + ' / ' + data.system.disk_total + ' GB';
+                    const diskBar = document.getElementById('disk-bar');
+                    diskBar.style.width = data.system.disk_percent + '%';
+                    diskBar.textContent = data.system.disk_percent + '%';
+                    
+                    // Uptime
+                    document.getElementById('uptime').textContent = data.uptime;
+                    
+                    // Update time
+                    document.getElementById('update-time').textContent = data.timestamp;
+                })
+                .catch(error => {
+                    console.error('Error fetching stats:', error);
+                    document.getElementById('xray-status').textContent = '❌ Connection Error';
+                    document.getElementById('xray-status').className = 'status-badge status-stopped';
+                });
+        }
+        
+        // Update ngay lập tức
+        updateStats();
+        loadGeoIPStatus();
+        
+        // Auto-refresh mỗi 3 giây
+        setInterval(updateStats, 3000);
+        
+        // ====== GEOIP STATUS ======
+        async function loadGeoIPStatus() {
+            try {
+                const response = await fetch('/api/geoip/status');
+                const data = await response.json();
+                
+                const statusDiv = document.getElementById('geoip-status');
+                
+                if (data.success) {
+                    if (data.status === 'enabled') {
+                        statusDiv.innerHTML = `
+                            <div style="color: #10b981; font-weight: 600;">✅ Enabled</div>
+                            <div style="margin-top: 8px; font-size: 0.85em;">
+                                GeoIP DB: ${data.geoip_installed ? '✓' : '✗'}<br>
+                                GeoSite DB: ${data.geosite_installed ? '✓' : '✗'}<br>
+                                Routing: ${data.routing_configured ? '✓' : '✗'}
+                            </div>
+                        `;
+                    } else {
+                        statusDiv.innerHTML = `
+                            <div style="color: #ef4444; font-weight: 600;">❌ Not Configured</div>
+                            <div style="margin-top: 8px; font-size: 0.85em;">
+                                Run: sudo bash geoip-setup.sh
+                            </div>
+                        `;
+                    }
+                } else {
+                    statusDiv.innerHTML = '<div style="color: #888;">Status unknown</div>';
+                }
+            } catch (error) {
+                console.error('Error loading GeoIP status:', error);
+            }
+        }
+        
+        // ====== BANDWIDTH CHART ======
+        let bandwidthChart = null;
+        
+        async function updateBandwidthChart() {
+            try {
+                const response = await fetch('/api/bandwidth/history?hours=24');
+                const data = await response.json();
+                
+                if (!data.success || !data.history || data.history.length === 0) {
+                    console.log('No bandwidth history data');
+                    return;
+                }
+                
+                const history = data.history;
+                
+                // Prepare chart data
+                const labels = history.map(h => {
+                    const date = new Date(h.timestamp);
+                    return date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'});
+                });
+                
+                const uploadData = history.map(h => (h.delta_sent / 1024 / 1024).toFixed(2));
+                const downloadData = history.map(h => (h.delta_recv / 1024 / 1024).toFixed(2));
+                
+                // Create or update chart
+                const ctx = document.getElementById('bandwidthChart').getContext('2d');
+                
+                if (bandwidthChart) {
+                    // Update existing chart
+                    bandwidthChart.data.labels = labels;
+                    bandwidthChart.data.datasets[0].data = uploadData;
+                    bandwidthChart.data.datasets[1].data = downloadData;
+                    bandwidthChart.update();
+                } else {
+                    // Create new chart
+                    bandwidthChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Upload (MB)',
+                                    data: uploadData,
+                                    borderColor: '#667eea',
+                                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Download (MB)',
+                                    data: downloadData,
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                title: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Bandwidth (MB)'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Time'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading bandwidth chart:', error);
+            }
+        }
+        
+        // Load chart on page load
+        updateBandwidthChart();
+        
+        // Refresh chart every 5 minutes
+        setInterval(updateBandwidthChart, 300000);
+        
+        // ====== SPEED TEST ======
+        async function runSpeedTest() {
+            const btn = document.getElementById('speedtest-btn');
+            const result = document.getElementById('speedtest-result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Testing... (may take 30-60s)';
+            result.innerHTML = '<div style="color: #888;">⏳ Running speed test...</div>';
+            
+            try {
+                const response = await fetch('/api/speedtest');
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.innerHTML = `
+                        <div style="background: #f0f9ff; padding: 15px; border-radius: 5px; border-left: 4px solid #667eea;">
+                            <div style="margin-bottom: 8px;"><strong>📶 Ping:</strong> ${data.result.ping}</div>
+                            <div style="margin-bottom: 8px;"><strong>⬇️ Download:</strong> ${data.result.download}</div>
+                            <div><strong>⬆️ Upload:</strong> ${data.result.upload}</div>
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `<div style="color: #ef4444;">❌ Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div style="color: #ef4444;">❌ Error: ${error.message}</div>`;
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Run Speed Test';
+        }
+        
+        // ====== PWA SERVICE WORKER ======
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed:', err));
+        }
+        
+        // PWA Install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button if not already installed
+            const installDiv = document.createElement('div');
+            installDiv.innerHTML = `
+                <div style="position: fixed; bottom: 20px; right: 20px; background: #667eea; color: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 9999;" id="install-pwa">
+                    📱 Install App
+                </div>
+            `;
+            document.body.appendChild(installDiv);
+            
+            document.getElementById('install-pwa').addEventListener('click', async () => {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('install-pwa').remove();
+                }
+                deferredPrompt = null;
+            });
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,48 @@
+# Python optimized .dockerignore
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+.Python
+pip-wheel-metadata/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testing
+.pytest_cache/
+.coverage
+.tox/
+htmlcov/
+.hypothesis/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Development
+.env
+.venv
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# OS
+.DS_Store
+Thumbs.db
+

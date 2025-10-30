@@ -1,0 +1,41 @@
+Index: Dockerfile
+===================================================================
+--- Dockerfile	original
++++ Dockerfile	optimized
+@@ -1,20 +1,31 @@
+ # Example of a non-optimized Dockerfile with many issues
+-FROM node:18
++# TODO: Pin with digest - run: docker pull node:18 && docker inspect node:18 | grep -i digest
++FROM node:18 AS builder
+ WORKDIR /app
++COPY package*.json ./
++# Install dependencies first for better caching
+ 
+ # Bad: Copy everything before installing dependencies (breaks cache)
+-COPY . .
+ 
+ # Bad: Not using npm ci, separate RUN commands
++
++COPY . .
+ RUN npm install
+ RUN npm run build
+ 
+ # Bad: No cleanup of cache
+-RUN apt-get update
+-RUN apt-get install -y curl wget
+-
++RUN apt-get update && \
++    apt-get install -y curl wget
+ EXPOSE 3000
+ 
+ # Bad: Running as root
++
++# Runtime stage
++FROM node:18-slim
++WORKDIR /app
++COPY --from=builder /app /app
++
++# Run as non-root user
++USER 10001
+ CMD ["npm", "start"]
+ 

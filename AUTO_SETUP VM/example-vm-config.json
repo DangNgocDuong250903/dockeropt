@@ -1,0 +1,86 @@
+{
+  "version": "1.0",
+  "created_at": "2025-10-29T10:00:00",
+  "current_profile": "production",
+  "profiles": {
+    "production": {
+      "name": "Production Servers",
+      "description": "Production VMs for Xray system",
+      "vms": [
+        {
+          "name": "hk-server-1",
+          "host": "34.150.92.64",
+          "user": "root",
+          "port": 22,
+          "ssh_key_path": "~/.ssh/id_rsa",
+          "description": "Hong Kong Production Server 1",
+          "added_at": "2025-10-29T10:00:00",
+          "last_connected": null
+        },
+        {
+          "name": "sg-server-1",
+          "host": "35.200.10.20",
+          "user": "root",
+          "port": 22,
+          "ssh_key_path": "~/.ssh/id_rsa",
+          "description": "Singapore Production Server 1",
+          "added_at": "2025-10-29T10:01:00",
+          "last_connected": null
+        },
+        {
+          "name": "jp-server-1",
+          "host": "35.243.20.30",
+          "user": "root",
+          "port": 22,
+          "ssh_key_path": "~/.ssh/id_rsa",
+          "description": "Japan Production Server 1",
+          "added_at": "2025-10-29T10:02:00",
+          "last_connected": null
+        }
+      ]
+    },
+    "development": {
+      "name": "Development Servers",
+      "description": "Development and testing VMs",
+      "vms": [
+        {
+          "name": "dev-hk",
+          "host": "34.92.100.50",
+          "user": "dev",
+          "port": 22,
+          "ssh_key_path": "~/.ssh/id_rsa_dev",
+          "description": "Hong Kong Dev Server",
+          "added_at": "2025-10-29T10:05:00",
+          "last_connected": null
+        },
+        {
+          "name": "staging",
+          "host": "34.92.100.51",
+          "user": "ubuntu",
+          "port": 22,
+          "ssh_key_path": "~/.ssh/id_rsa",
+          "description": "Staging Server",
+          "added_at": "2025-10-29T10:06:00",
+          "last_connected": null
+        }
+      ]
+    },
+    "personal": {
+      "name": "Personal Servers",
+      "description": "Personal VMs and test servers",
+      "vms": [
+        {
+          "name": "home-nas",
+          "host": "192.168.1.100",
+          "user": "admin",
+          "port": 2222,
+          "ssh_key_path": "~/.ssh/id_rsa",
+          "description": "Home NAS Server",
+          "added_at": "2025-10-29T10:10:00",
+          "last_connected": null
+        }
+      ]
+    }
+  }
+}
+

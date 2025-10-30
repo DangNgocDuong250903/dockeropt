@@ -1,0 +1,36 @@
+# Example: Using the dockeropt GitHub Action directly
+name: Dockerfile Check (Action)
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Optimize Dockerfile
+        id: optimize
+        uses: dockeropt/dockeropt-action@v1
+        with:
+          dockerfile: './Dockerfile'
+          fail-on: 'high'
+          format: 'sarif'
+          output: 'results.sarif'
+      
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+      
+      - name: Show results
+        run: |
+          echo "Score: ${{ steps.optimize.outputs.score }}"
+          echo "Findings: ${{ steps.optimize.outputs.findings }}"
+          echo "Size savings: ${{ steps.optimize.outputs.size-savings }} MB"
+

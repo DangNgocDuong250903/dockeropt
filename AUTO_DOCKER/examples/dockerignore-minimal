@@ -1,0 +1,21 @@
+# Minimal .dockerignore for quick setup
+
+# Version control
+.git
+.gitignore
+
+# Dependencies (install fresh in container)
+node_modules
+vendor
+__pycache__
+
+# Development
+.env
+*.log
+.DS_Store
+
+# Documentation
+README.md
+*.md
+docs
+

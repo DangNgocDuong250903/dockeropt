@@ -1,0 +1,24 @@
+# RUN 7aed10336002
+# PWD E:\AUTO
+# CMD cmd.exe /c E:\AUTO\auto.bat
+
++------------------------------------------------------------------+
+| AUTO Project                                                     |
+|                                                                  |
+| Components:                                                      |
+|   * VM SSH Manager     - Manage VMs & SSH                        |
+|   * Script Panel       - Web-based script runner                 |
+|   * Monitoring         - Xray VPS monitoring                     |
+|                                                                  |
+| Quick Commands:                                                  |
+|   auto vm list          - List VMs                               |
+|   auto scripts start    - Start web UI                           |
+|   auto monitor status   - Check services                         |
+|   auto --help           - Show all commands                      |
+|                                                                  |
+| Docs: README.md, script_panel/README.md, VM-SSH-MANAGER-GUIDE.md |
++------------------------------------------------------------------+
+
+Type 'auto --help' for all commands
+Type 'auto quick' for quick actions menu
+

@@ -1,0 +1,11 @@
+body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;background:#0b0e14;color:#e6e1cf}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#111727;border-bottom:1px solid #22293b}
+header h1{margin:0;font-size:18px}
+header nav a{color:#a6accd;margin-right:12px;text-decoration:none}
+main{padding:16px}
+.table,.script-table{width:100%;border-collapse:collapse}
+.script-table th,.script-table td{border-bottom:1px solid #22293b;padding:8px}
+button{background:#2d5bff;color:white;border:none;padding:6px 10px;border-radius:4px;cursor:pointer}
+button:hover{background:#2249cc}
+input[type=text]{width:100%;max-width:420px;padding:6px;background:#0f1320;border:1px solid #22293b;color:#e6e1cf}
+pre{background:#0f1320;border:1px solid #22293b;padding:12px;overflow:auto;max-height:70vh}

@@ -1,0 +1,78 @@
+name: 'Dockerfile Optimizer'
+description: 'Lint, analyze, and optimize Dockerfiles with intelligent suggestions'
+author: 'Dockerfile Optimizer Team'
+
+branding:
+  icon: 'package'
+  color: 'blue'
+
+inputs:
+  dockerfile:
+    description: 'Path to Dockerfile to analyze'
+    required: true
+    default: './Dockerfile'
+  
+  fail-on:
+    description: 'Fail on severity level: high, medium, low'
+    required: false
+    default: 'high'
+  
+  format:
+    description: 'Output format: sarif, json, markdown, text'
+    required: false
+    default: 'sarif'
+  
+  output:
+    description: 'Output file path'
+    required: false
+    default: 'results.sarif'
+
+outputs:
+  score:
+    description: 'Optimization score (0-100)'
+  
+  findings:
+    description: 'Number of findings'
+  
+  size-savings:
+    description: 'Estimated size savings in MB'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install dockeropt
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        npm ci --production
+        npm link
+    
+    - name: Run dockeropt
+      shell: bash
+      id: optimize
+      run: |
+        dockeropt ci ${{ inputs.dockerfile }} \
+          --format ${{ inputs.format }} \
+          --out ${{ inputs.output }} \
+          --fail-on ${{ inputs.fail-on }} > results.txt || true
+        
+        # Parse results
+        SCORE=$(grep "Score:" results.txt | sed 's/.*Score: \([0-9]*\).*/\1/')
+        FINDINGS=$(grep "Findings:" results.txt | sed 's/.*Findings: \([0-9]*\).*/\1/')
+        
+        echo "score=$SCORE" >> $GITHUB_OUTPUT
+        echo "findings=$FINDINGS" >> $GITHUB_OUTPUT
+        
+        cat results.txt
+    
+    - name: Upload results
+      uses: actions/upload-artifact@v4
+      with:
+        name: dockerfile-optimizer-results
+        path: ${{ inputs.output }}
+

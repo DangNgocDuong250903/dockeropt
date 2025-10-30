@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servers Management - Xray Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+        }
+        .nav {
+            display: flex;
+            gap: 15px;
+        }
+        .nav a {
+            text-decoration: none;
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .nav a:hover, .nav a.active {
+            background: #667eea;
+            color: white;
+        }
+        .actions {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .servers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .server-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .server-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .server-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-active {
+            background: #10b981;
+            color: white;
+        }
+        .status-down {
+            background: #ef4444;
+            color: white;
+        }
+        .status-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .server-info {
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .info-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .info-value {
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .server-stats {
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .server-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .btn-success { background: #10b981; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-info { background: #3b82f6; color: white; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ Servers Management</h1>
+            <div class="nav">
+                <a href="/">Dashboard</a>
+                <a href="/users">Users</a>
+                <a href="/servers" class="active">Servers</a>
+                <a href="/loadbalancer">Load Balancer</a>
+                <a href="/health">Health Monitor</a>
+                <a href="/logs">Logs</a>
+                <a href="/logout">Logout ({{ username }})</a>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="showAddServerModal()">➕ Add New Server</button>
+            <button class="btn btn-success btn-sm" onclick="healthCheckAll()" style="margin-left: 10px;">🔍 Health Check All</button>
+        </div>
+
+        <div class="servers-grid" id="servers-grid">
+            <!-- Servers will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Add Server Modal -->
+    <div id="addServerModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Add New Server</h2>
+            <div class="form-group">
+                <label>Server Name</label>
+                <input type="text" id="serverName" placeholder="HK-Server-1">
+            </div>
+            <div class="form-group">
+                <label>IP Address</label>
+                <input type="text" id="serverIP" placeholder="35.200.100.50">
+            </div>
+            <div class="form-group">
+                <label>Region</label>
+                <input type="text" id="serverRegion" placeholder="Hong Kong">
+            </div>
+            <div class="form-group">
+                <label>SSH User</label>
+                <input type="text" id="sshUser" value="root">
+            </div>
+            <div class="form-group">
+                <label>SSH Key Path</label>
+                <input type="text" id="sshKeyPath" value="~/.ssh/id_rsa">
+            </div>
+            <div class="form-group">
+                <label>📋 Setup Instructions</label>
+                <div style="background: #f0f8ff; padding: 15px; border-radius: 5px; border: 1px solid #d0e8ff;">
+                    <p style="margin: 0 0 10px 0; font-weight: bold;">Step 1: Load SSH Key</p>
+                    <button class="btn btn-info btn-sm" onclick="loadSSHKeyAndCommands()" style="margin-bottom: 10px;">🔑 Generate Setup Commands</button>
+                    
+                    <div id="setupCommands" style="display: none; margin-top: 10px;">
+                        <p style="margin: 10px 0 5px 0; font-weight: bold;">Step 2: Run this on your NEW server:</p>
+                        <textarea id="setupCommand" readonly style="width: 100%; height: 120px; padding: 10px; font-family: monospace; font-size: 11px; border: 1px solid #ddd; border-radius: 5px; background: #2d2d2d; color: #0f0;"></textarea>
+                        <button class="btn btn-success btn-sm" onclick="copySetupCommand()" style="margin-top: 5px;">📋 Copy Command</button>
+                        
+                        <p style="margin: 15px 0 5px 0; font-weight: bold; color: #666;">Step 3: After running the command above, click Add Server below</p>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="addServer()">✅ Add Server</button>
+                <button class="btn btn-danger" onclick="closeAddServerModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Server Modal -->
+    <div id="editServerModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Edit Server Configuration</h2>
+            <input type="hidden" id="editServerId">
+            <div class="form-group">
+                <label>Server Name</label>
+                <input type="text" id="editServerName">
+            </div>
+            <div class="form-group">
+                <label>IP Address</label>
+                <input type="text" id="editServerIP">
+            </div>
+            <div class="form-group">
+                <label>Region</label>
+                <input type="text" id="editServerRegion">
+            </div>
+            <div class="form-group">
+                <label>SSH User</label>
+                <input type="text" id="editSshUser">
+            </div>
+            <div class="form-group">
+                <label>SSH Key Path</label>
+                <input type="text" id="editSshKeyPath">
+            </div>
+            <div class="form-group">
+                <label>Max Users</label>
+                <input type="number" id="editMaxUsers">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="editStatus" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="active">Active</option>
+                    <option value="down">Down</option>
+                    <option value="maintenance">Maintenance</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="updateServer()">Save Changes</button>
+                <button class="btn btn-danger" onclick="closeEditServerModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let servers = [];
+
+        async function loadServers() {
+            try {
+                const response = await fetch('/api/servers');
+                const data = await response.json();
+                
+                if (data.success) {
+                    servers = data.servers;
+                    renderServers();
+                }
+            } catch (error) {
+                console.error('Error loading servers:', error);
+            }
+        }
+
+        function renderServers() {
+            const grid = document.getElementById('servers-grid');
+            
+            if (servers.length === 0) {
+                grid.innerHTML = '<div style="background: white; padding: 40px; border-radius: 10px; text-align: center; grid-column: 1/-1;"><h3>No servers yet</h3><p>Click "Add New Server" to get started</p></div>';
+                return;
+            }
+
+            grid.innerHTML = servers.map(server => `
+                <div class="server-card">
+                    <div class="server-header">
+                        <div class="server-name">${server.name}</div>
+                        <div class="status-badge status-${server.status}">${server.status.toUpperCase()}</div>
+                    </div>
+                    <div class="server-info">
+                        <div class="info-row">
+                            <span class="info-label">IP Address</span>
+                            <span class="info-value">${server.ip_address}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Region</span>
+                            <span class="info-value">${server.region || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Users</span>
+                            <span class="info-value">${server.current_users || 0} / ${server.max_users || 100}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Xray Version</span>
+                            <span class="info-value">${server.xray_version || 'Unknown'}</span>
+                        </div>
+                    </div>
+                    <div class="server-stats">
+                        <div class="stat-box">
+                            <div class="stat-label">CPU</div>
+                            <div class="stat-value" id="cpu-${server.id}">${server.cpu_usage ? server.cpu_usage.toFixed(1) + '%' : '--'}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">RAM</div>
+                            <div class="stat-value" id="ram-${server.id}">${server.ram_usage ? server.ram_usage.toFixed(1) + '%' : '--'}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Disk</div>
+                            <div class="stat-value" id="disk-${server.id}">${server.disk_usage ? server.disk_usage.toFixed(1) + '%' : '--'}</div>
+                        </div>
+                    </div>
+                    <div class="server-actions">
+                        <button class="btn btn-info btn-sm" onclick="editServer(${server.id})">⚙️ Config</button>
+                        <button class="btn btn-success btn-sm" onclick="healthCheck(${server.id})">🔍 Check</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteServer(${server.id}, '${server.name}')">🗑️ Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddServerModal() {
+            document.getElementById('addServerModal').classList.add('show');
+        }
+
+        function closeAddServerModal() {
+            document.getElementById('addServerModal').classList.remove('show');
+        }
+
+        async function addServer() {
+            const name = document.getElementById('serverName').value;
+            const ip = document.getElementById('serverIP').value;
+            const region = document.getElementById('serverRegion').value;
+            const sshUser = document.getElementById('sshUser').value;
+            const sshKeyPath = document.getElementById('sshKeyPath').value;
+
+            if (!name || !ip || !region) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/servers/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, ip, region, ssh_user: sshUser, ssh_key_path: sshKeyPath })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Server added successfully!');
+                    closeAddServerModal();
+                    loadServers();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error adding server: ' + error);
+            }
+        }
+
+        async function deleteServer(id, name) {
+            if (!confirm(`Are you sure you want to delete server "${name}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/servers/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Server deleted successfully!');
+                    loadServers();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error deleting server: ' + error);
+            }
+        }
+
+        function editServer(id) {
+            const server = servers.find(s => s.id === id);
+            if (!server) return;
+            
+            document.getElementById('editServerId').value = server.id;
+            document.getElementById('editServerName').value = server.name;
+            document.getElementById('editServerIP').value = server.ip_address;
+            document.getElementById('editServerRegion').value = server.region || '';
+            document.getElementById('editSshUser').value = server.ssh_user || 'root';
+            document.getElementById('editSshKeyPath').value = server.ssh_key_path || '~/.ssh/id_rsa';
+            document.getElementById('editMaxUsers').value = server.max_users || 100;
+            document.getElementById('editStatus').value = server.status || 'active';
+            
+            document.getElementById('editServerModal').classList.add('show');
+        }
+
+        function closeEditServerModal() {
+            document.getElementById('editServerModal').classList.remove('show');
+        }
+
+        async function updateServer() {
+            const id = document.getElementById('editServerId').value;
+            const data = {
+                name: document.getElementById('editServerName').value,
+                ip: document.getElementById('editServerIP').value,
+                region: document.getElementById('editServerRegion').value,
+                ssh_user: document.getElementById('editSshUser').value,
+                ssh_key_path: document.getElementById('editSshKeyPath').value,
+                max_users: parseInt(document.getElementById('editMaxUsers').value),
+                status: document.getElementById('editStatus').value
+            };
+
+            try {
+                const response = await fetch(`/api/servers/${id}/update`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Server updated successfully!');
+                    closeEditServerModal();
+                    loadServers();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error updating server: ' + error);
+            }
+        }
+
+        async function healthCheck(id) {
+            try {
+                const response = await fetch(`/api/servers/${id}/health`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update stats on card immediately
+                    const cpuEl = document.getElementById(`cpu-${id}`);
+                    const ramEl = document.getElementById(`ram-${id}`);
+                    const diskEl = document.getElementById(`disk-${id}`);
+                    
+                    if (cpuEl) cpuEl.textContent = data.stats.cpu.toFixed(1) + '%';
+                    if (ramEl) ramEl.textContent = data.stats.ram.toFixed(1) + '%';
+                    if (diskEl) diskEl.textContent = data.stats.disk.toFixed(1) + '%';
+                    
+                    // Update server object
+                    const server = servers.find(s => s.id === id);
+                    if (server) {
+                        server.cpu_usage = data.stats.cpu;
+                        server.ram_usage = data.stats.ram;
+                        server.disk_usage = data.stats.disk;
+                    }
+                    
+                    alert(`✅ Health Check:\nCPU: ${data.stats.cpu.toFixed(1)}%\nRAM: ${data.stats.ram.toFixed(1)}%\nDisk: ${data.stats.disk.toFixed(1)}%\nConnections: ${data.stats.connections}`);
+                } else {
+                    alert('❌ Health check failed: ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error);
+            }
+        }
+
+        async function healthCheckAll() {
+            const checkPromises = servers.map(server => healthCheck(server.id));
+            await Promise.all(checkPromises);
+            alert('Health check completed for all servers!');
+        }
+
+        async function loadSSHKeyAndCommands() {
+            try {
+                const response = await fetch('/api/ssh/public-key');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const sshKey = data.public_key;
+                    const sshUser = document.getElementById('sshUser').value || 'root';
+                    
+                    // Generate setup command
+                    const setupCmd = `# SSH vào server mới của bạn và chạy lệnh này:
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+echo '${sshKey}' >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+echo '✅ SSH key added successfully!'`;
+                    
+                    document.getElementById('setupCommand').value = setupCmd;
+                    document.getElementById('setupCommands').style.display = 'block';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error loading SSH key: ' + error);
+            }
+        }
+
+        function copySetupCommand() {
+            const cmdText = document.getElementById('setupCommand');
+            cmdText.select();
+            document.execCommand('copy');
+            alert('Setup command copied! Paste vào terminal của server mới.');
+        }
+
+        // Load servers on page load
+        loadServers();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadServers, 30000);
+    </script>
+</body>
+</html>
+

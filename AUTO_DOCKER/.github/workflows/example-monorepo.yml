@@ -1,0 +1,52 @@
+# Example: Monorepo with multiple services
+name: Monorepo Dockerfile Check
+
+on:
+  pull_request:
+    paths:
+      - 'services/**/Dockerfile'
+
+jobs:
+  find-dockerfiles:
+    runs-on: ubuntu-latest
+    outputs:
+      dockerfiles: ${{ steps.find.outputs.dockerfiles }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Find Dockerfiles
+        id: find
+        run: |
+          DOCKERFILES=$(find services -type f -name 'Dockerfile' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "dockerfiles=$DOCKERFILES" >> $GITHUB_OUTPUT
+
+  optimize:
+    needs: find-dockerfiles
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dockerfile: ${{ fromJson(needs.find-dockerfiles.outputs.dockerfiles) }}
+      fail-fast: false
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dockeropt
+        run: npm install -g dockeropt
+      
+      - name: Optimize ${{ matrix.dockerfile }}
+        run: |
+          dockeropt fix "${{ matrix.dockerfile }}" \
+            -o "out/$(dirname ${{ matrix.dockerfile }})" \
+            --format markdown
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimization-report-${{ hashFiles(matrix.dockerfile) }}
+          path: out/
+

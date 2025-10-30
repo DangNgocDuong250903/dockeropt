@@ -1,0 +1,90 @@
+name: Dockerfile Optimization
+
+on:
+  pull_request:
+    paths:
+      - '**/Dockerfile'
+      - '**/Dockerfile.*'
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dockeropt
+        run: npm install -g dockeropt
+
+      - name: Find Dockerfiles
+        id: find
+        run: |
+          echo "files=$(find . -name 'Dockerfile*' -type f | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Lint Dockerfiles
+        run: |
+          for file in ${{ steps.find.outputs.files }}; do
+            echo "Analyzing $file..."
+            dockeropt lint "$file" --format json > "${file}.lint.json" || true
+          done
+
+      - name: Run CI Check
+        run: |
+          EXIT_CODE=0
+          for file in ${{ steps.find.outputs.files }}; do
+            echo "CI check for $file..."
+            dockeropt ci "$file" --format sarif --out "${file}.sarif" --fail-on high || EXIT_CODE=$?
+          done
+          exit $EXIT_CODE
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: .
+          category: dockerfile-optimizer
+
+      - name: Generate optimization report
+        if: github.event_name == 'pull_request'
+        run: |
+          for file in ${{ steps.find.outputs.files }}; do
+            echo "Generating report for $file..."
+            dockeropt fix "$file" -o "out/${file}" --format markdown
+          done
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const files = '${{ steps.find.outputs.files }}'.split(' ').filter(Boolean);
+            
+            let comment = '## 🐳 Dockerfile Optimization Report\n\n';
+            
+            for (const file of files) {
+              const reportPath = `out/${file}/report.md`;
+              if (fs.existsSync(reportPath)) {
+                comment += `### ${file}\n\n`;
+                comment += fs.readFileSync(reportPath, 'utf8');
+                comment += '\n\n---\n\n';
+              }
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+

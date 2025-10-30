@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Gemini API</title>
+</head>
+<body>
+  <h1>Test Gemini API</h1>
+  <button onclick="testAPI()">Test API</button>
+  <pre id="result"></pre>
+
+  <script>
+    async function testAPI() {
+      const API_KEY = 'AIzaSyAQt__5W8hJivKf27HdW3YLN4X78tiiD_M';
+      const result = document.getElementById('result');
+      
+      result.textContent = 'Testing...';
+      
+      try {
+        // Test simple text generation
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: 'Say hello in JSON format: {"message": "hello"}'
+              }]
+            }]
+          })
+        });
+
+        const data = await response.json();
+        result.textContent = JSON.stringify(data, null, 2);
+        
+        if (!response.ok) {
+          result.textContent = 'Error: ' + response.status + '\n' + JSON.stringify(data, null, 2);
+        }
+      } catch (error) {
+        result.textContent = 'Error: ' + error.message;
+      }
+    }
+  </script>
+</body>
+</html>
+

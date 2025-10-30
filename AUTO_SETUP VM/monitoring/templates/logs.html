@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Logs - Xray VPS Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .nav {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .nav a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            background: #667eea;
+            color: white;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .log-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-left: 3px solid #667eea;
+            padding-left: 10px;
+        }
+        
+        .log-timestamp {
+            color: #888;
+            font-size: 0.85em;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .status-active {
+            color: #10b981;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📜 Connection Logs</h1>
+            <p>Logged in as: <strong>{{ username }}</strong></p>
+        </div>
+        
+        <div class="nav">
+            <a href="/">📊 Dashboard</a>
+            <a href="/users">👥 Users</a>
+            <a href="/logs">📜 Logs</a>
+            <a href="/settings">⚙️ Settings</a>
+            <a href="/logout">🚪 Logout</a>
+        </div>
+        
+        <!-- Active Connections -->
+        <div class="card">
+            <h2>🔗 Active Connections</h2>
+            <button class="btn" onclick="loadConnections()">🔄 Refresh</button>
+            <table id="connections-table">
+                <thead>
+                    <tr>
+                        <th>Protocol</th>
+                        <th>State</th>
+                        <th>Local Address</th>
+                        <th>Remote Address</th>
+                        <th>Process</th>
+                    </tr>
+                </thead>
+                <tbody id="connections-body">
+                    <tr><td colspan="5" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Xray Logs -->
+        <div class="card">
+            <h2>📝 Xray Service Logs</h2>
+            <button class="btn" onclick="loadLogs()">🔄 Refresh</button>
+            <button class="btn" onclick="loadLogs(500)">Show 500 lines</button>
+            <button class="btn" onclick="loadLogs(1000)">Show 1000 lines</button>
+            <div class="log-container" id="xray-logs">
+                Loading logs...
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function loadConnections() {
+            try {
+                const response = await fetch('/api/logs/connections');
+                const data = await response.json();
+                
+                const tbody = document.getElementById('connections-body');
+                
+                if (data.success && data.connections.length > 0) {
+                    tbody.innerHTML = data.connections.map(conn => `
+                        <tr>
+                            <td>${conn.proto}</td>
+                            <td class="status-active">${conn.state}</td>
+                            <td><code>${conn.local}</code></td>
+                            <td><code>${conn.remote}</code></td>
+                            <td>${conn.process || '-'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No active connections</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading connections:', error);
+                document.getElementById('connections-body').innerHTML = 
+                    '<tr><td colspan="5" style="text-align: center; color: red;">Error loading connections</td></tr>';
+            }
+        }
+        
+        async function loadLogs(lines = 100) {
+            try {
+                const response = await fetch(`/api/logs/xray?lines=${lines}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('xray-logs');
+                
+                if (data.success && data.logs.length > 0) {
+                    container.innerHTML = data.logs.map(log => {
+                        const timestamp = new Date(parseInt(log.timestamp) / 1000);
+                        return `
+                            <div class="log-entry">
+                                <span class="log-timestamp">[${timestamp.toLocaleString()}]</span>
+                                ${log.message}
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    // Scroll to bottom
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = '<div class="log-entry">No logs available</div>';
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                document.getElementById('xray-logs').innerHTML = 
+                    '<div class="log-entry" style="color: red;">Error loading logs</div>';
+            }
+        }
+        
+        // Load data on page load
+        loadConnections();
+        loadLogs();
+        
+        // Auto-refresh every 10 seconds
+        setInterval(loadConnections, 10000);
+    </script>
+</body>
+</html>
+
