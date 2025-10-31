@@ -2,12 +2,19 @@
  * Gemini AI Integration for Dockerfile Analysis
  */
 
-const GEMINI_API_KEY = 'AIzaSyAQt__5W8hJivKf27HdW3YLN4X78tiiD_M';
+// Get API key from environment variable
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 export class GeminiAnalyzer {
   constructor(apiKey = GEMINI_API_KEY) {
-    this.apiKey = apiKey;
+    this.apiKey = apiKey || GEMINI_API_KEY;
+    
+    // Warn if API key is not set
+    if (!this.apiKey) {
+      console.warn('⚠️ GEMINI_API_KEY is not set. AI features will not work.');
+      console.warn('Please set VITE_GEMINI_API_KEY in your .env file');
+    }
   }
 
   async analyzeDockerfile(dockerfile) {

@@ -4,4 +4,8 @@ dist/
 .DS_Store
 coverage/
 .env
+.env.local
 *.tgz
+.history/
+.vscode/
+.idea/

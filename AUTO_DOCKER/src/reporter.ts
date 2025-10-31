@@ -182,7 +182,7 @@ export class Reporter {
             driver: {
               name: 'DockerfileOptimizer',
               version: '1.0.0',
-              informationUri: 'https://github.com/dockeropt/dockeropt',
+              informationUri: 'https://github.com/DangNgocDuong250903/dockeropt',
               rules: this.generateSARIFRules(result.findings),
             },
           },

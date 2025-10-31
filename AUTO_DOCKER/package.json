@@ -21,8 +21,16 @@
     "security",
     "performance"
   ],
-  "author": "",
+  "author": "Đặng Ngọc Dương",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DangNgocDuong250903/dockeropt.git"
+  },
+  "homepage": "https://github.com/DangNgocDuong250903/dockeropt#readme",
+  "bugs": {
+    "url": "https://github.com/DangNgocDuong250903/dockeropt/issues"
+  },
   "devDependencies": {
     "@types/diff": "^7.0.2",
     "@types/jest": "^29.5.11",

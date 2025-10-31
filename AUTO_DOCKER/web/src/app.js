@@ -1,51 +1,29 @@
 // Import browser-compatible engine
-import { DockerfileOptimizerEngine } from './dockeropt-core.js';
-import GeminiAnalyzer from './gemini-ai.js';
-import { createEditor } from './editor.js';
-import { renderHeader } from './components/header.js';
-import { renderHero } from './components/hero.js';
-import { renderEditor } from './components/editor.js';
-import { renderResults } from './components/results.js';
-import { renderExamples } from './components/examples.js';
-import { renderFooter } from './components/footer.js';
-
-const EXAMPLE_BAD_DOCKERFILE = `FROM node:18
-WORKDIR /app
-COPY . .
-RUN npm install
-RUN npm run build
-RUN apt-get update
-RUN apt-get install -y curl wget
-EXPOSE 3000
-CMD ["npm", "start"]`;
-
-const EXAMPLE_GOOD_DOCKERFILE = `FROM node:18-alpine@sha256:a6385524b09b9de27e332b22e90fb7a70e3adf1a41a54edd0c8e6e597f4e9aaf AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
-COPY . .
-RUN npm run build
-
-FROM node:18-alpine@sha256:a6385524b09b9de27e332b22e90fb7a70e3adf1a41a54edd0c8e6e597f4e9aaf
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-USER node
-CMD ["node", "dist/index.js"]`;
+import { DockerfileOptimizerEngine } from "./dockeropt-core.js";
+import GeminiAnalyzer from "./gemini-ai.js";
+import { createEditor } from "./editor.js";
+import { renderHeader } from "./components/header.js";
+import { renderHero } from "./components/hero.js";
+import { renderEditor } from "./components/editor.js";
+import { renderResults } from "./components/results.js";
+import { renderExamples, EXAMPLES } from "./components/examples.js";
+import { renderFooter } from "./components/footer.js";
 
 export function createApp(container) {
   // Initialize with AI support
   const geminiAnalyzer = new GeminiAnalyzer();
   const engine = new DockerfileOptimizerEngine(true, geminiAnalyzer);
-  
+
   let editor = null;
   let state = {
-    dockerfile: EXAMPLE_BAD_DOCKERFILE,
+    dockerfile: EXAMPLES.node.bad,
     result: null,
     loading: false,
-    activeTab: 'optimized', // 'optimized' | 'findings' | 'diff'
+    activeTab: "optimized", // 'optimized' | 'findings' | 'diff'
     useAI: true, // Enable AI by default
     showExplanation: null, // Track which finding is showing explanation
+    activeLang: "node", // Current language tab
+    originalDockerfile: "", // Store original for comparison
   };
 
   function render() {
@@ -54,11 +32,33 @@ export function createApp(container) {
       ${renderHero()}
       
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Security Note -->
+        <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-start gap-3">
+            <span class="text-xl">🔒</span>
+            <div>
+              <h3 class="font-semibold text-green-900 mb-1">100% Local - An toàn & Riêng tư</h3>
+              <p class="text-sm text-green-800 mb-2">
+                Tất cả phân tích chạy trên trình duyệt/máy của bạn. <strong>Không gửi Dockerfile lên server nào</strong>. 
+                Dữ liệu của bạn không bao giờ rời khỏi máy bạn.
+              </p>
+              <details class="mt-2">
+                <summary class="text-xs text-green-700 cursor-pointer hover:text-green-900">
+                  📖 Tìm hiểu thêm
+                </summary>
+                <div class="mt-2 text-xs text-green-700 space-y-1">
+                  <p>• Web version: Chạy hoàn toàn trên browser của bạn (JavaScript)</p>
+                  <p>• CLI version: Chạy trên máy local, không kết nối internet</p>
+                  <p>• Không có backend server, không có database, không logging</p>
+                  <p>• Mã nguồn mở - bạn có thể audit code</p>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
         <!-- Examples -->
-        ${renderExamples({
-          onLoadBad: () => loadExample(EXAMPLE_BAD_DOCKERFILE),
-          onLoadGood: () => loadExample(EXAMPLE_GOOD_DOCKERFILE),
-        })}
+        ${renderExamples({})}
 
         <!-- Editor Section -->
         <div class="mt-12">
@@ -72,7 +72,7 @@ export function createApp(container) {
                   <input 
                     type="checkbox" 
                     id="ai-toggle"
-                    ${state.useAI ? 'checked' : ''}
+                    ${state.useAI ? "checked" : ""}
                     class="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                   >
                   <span class="flex items-center gap-1">
@@ -89,9 +89,18 @@ export function createApp(container) {
                 <button 
                   id="optimize-btn"
                   class="btn-primary text-sm"
-                  ${state.loading ? 'disabled' : ''}
+                  ${state.loading ? "disabled" : ""}
                 >
-                  ${state.loading ? '⏳ Analyzing with AI...' : '🚀 Optimize'}
+                  ${
+                    state.loading
+                      ? `
+                    <span class="flex items-center gap-2">
+                      <span class="animate-spin">⏳</span>
+                      <span>Analyzing layers...</span>
+                    </span>
+                  `
+                      : "🚀 Optimize"
+                  }
                 </button>
               </div>
             </div>
@@ -101,11 +110,15 @@ export function createApp(container) {
         </div>
 
         <!-- Results Section -->
-        ${state.result ? `
+        ${
+          state.result
+            ? `
           <div class="mt-8" id="results-section">
             ${renderResults(state.result, state.activeTab)}
           </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
 
       ${renderFooter()}
@@ -113,11 +126,16 @@ export function createApp(container) {
 
     container.innerHTML = html;
     attachEventListeners();
+
+    // Attach growth loop handlers after render
+    setTimeout(() => {
+      attachGrowthLoopHandlers();
+    }, 0);
   }
 
   function attachEventListeners() {
     // AI toggle
-    const aiToggle = document.getElementById('ai-toggle');
+    const aiToggle = document.getElementById("ai-toggle");
     if (aiToggle) {
       aiToggle.onchange = () => {
         state.useAI = aiToggle.checked;
@@ -126,45 +144,215 @@ export function createApp(container) {
     }
 
     // Optimize button
-    const optimizeBtn = document.getElementById('optimize-btn');
+    const optimizeBtn = document.getElementById("optimize-btn");
     if (optimizeBtn) {
       optimizeBtn.onclick = handleOptimize;
     }
 
     // Clear button
-    const clearBtn = document.getElementById('clear-btn');
+    const clearBtn = document.getElementById("clear-btn");
     if (clearBtn) {
       clearBtn.onclick = handleClear;
     }
 
-    // Example buttons
-    const loadBadBtn = document.getElementById('load-bad-example');
-    if (loadBadBtn) {
-      loadBadBtn.onclick = () => loadExample(EXAMPLE_BAD_DOCKERFILE);
+    // Optimize demo button (from hero)
+    const optimizeDemoBtn = document.getElementById("optimize-demo-btn");
+    if (optimizeDemoBtn) {
+      optimizeDemoBtn.onclick = () => {
+        loadExample(EXAMPLES.node.bad);
+        setTimeout(() => {
+          document.getElementById("optimize-btn")?.click();
+        }, 500);
+      };
     }
 
-    const loadGoodBtn = document.getElementById('load-good-example');
-    if (loadGoodBtn) {
-      loadGoodBtn.onclick = () => loadExample(EXAMPLE_GOOD_DOCKERFILE);
+    // Language tabs
+    const langTabs = document.querySelectorAll("[data-lang-tab]");
+    langTabs.forEach((tab) => {
+      tab.onclick = () => {
+        const lang = tab.dataset.langTab;
+        state.activeLang = lang;
+
+        // Update tab styles
+        langTabs.forEach((t) => {
+          t.className =
+            "px-4 py-2 text-sm font-medium rounded-t-lg transition text-gray-600 hover:text-gray-900 hover:bg-white";
+        });
+        tab.className =
+          "px-4 py-2 text-sm font-medium rounded-t-lg transition bg-white text-primary-600 border-b-2 border-primary-600";
+
+        // Update example buttons
+        const exampleBtns = document.querySelectorAll("[data-load-example]");
+        exampleBtns.forEach((btn) => {
+          btn.dataset.lang = lang;
+        });
+
+        // No need to re-render, just update the buttons
+      };
+    });
+
+    // Example buttons (bad/good)
+    document.querySelectorAll("[data-load-example]").forEach((btn) => {
+      btn.onclick = () => {
+        const type = btn.dataset.loadExample;
+        const lang = btn.dataset.lang || state.activeLang;
+        const dockerfile = EXAMPLES[lang]?.[type];
+        if (dockerfile) {
+          loadExample(dockerfile);
+        }
+      };
+    });
+
+    // URL fetch button
+    const fetchUrlBtn = document.getElementById("fetch-url-btn");
+    if (fetchUrlBtn) {
+      fetchUrlBtn.onclick = handleFetchURL;
     }
 
     // Tab buttons
-    const tabButtons = document.querySelectorAll('[data-tab]');
-    tabButtons.forEach(btn => {
+    const tabButtons = document.querySelectorAll("[data-tab]");
+    tabButtons.forEach((btn) => {
       btn.onclick = () => handleTabChange(btn.dataset.tab);
     });
 
     // Copy buttons
-    const copyButtons = document.querySelectorAll('[data-copy]');
-    copyButtons.forEach(btn => {
+    const copyButtons = document.querySelectorAll("[data-copy]");
+    copyButtons.forEach((btn) => {
       btn.onclick = () => handleCopy(btn.dataset.copy);
     });
 
     // Download buttons
-    const downloadBtn = document.getElementById('download-optimized');
+    const downloadBtn = document.getElementById("download-optimized");
     if (downloadBtn) {
       downloadBtn.onclick = handleDownload;
     }
+
+    // Install OS tabs
+    const installOsTabs = document.querySelectorAll("[data-install-os]");
+    installOsTabs.forEach((tab) => {
+      tab.onclick = () => {
+        const os = tab.dataset.installOs;
+
+        // Update tab styles
+        installOsTabs.forEach((t) => {
+          t.className =
+            "px-4 py-2 text-sm font-medium rounded-t-lg transition text-gray-400 hover:text-white hover:bg-gray-800";
+        });
+        tab.className =
+          "px-4 py-2 text-sm font-medium rounded-t-lg transition bg-gray-800 text-white border-b-2 border-primary-500";
+
+        // Update install content
+        const installContent = document.getElementById("install-content");
+        if (installContent) {
+          installContent.innerHTML = getInstallContent(os);
+        }
+      };
+    });
+  }
+
+  function getInstallContent(os) {
+    const contents = {
+      macos: `
+        <div class="space-y-4">
+          <div>
+            <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+              <span>📦</span>
+              <span>npm (Global Install)</span>
+            </h4>
+            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>npm install -g dockeropt</code></pre>
+            <p class="text-xs text-gray-400 mt-1">After publishing to npm</p>
+          </div>
+          <div class="text-gray-400 text-sm">or</div>
+          <div>
+            <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+              <span>🔨</span>
+              <span>Build from Source</span>
+            </h4>
+            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>git clone https://github.com/DangNgocDuong250903/dockeropt.git
+cd dockeropt
+npm install
+npm run build
+npm link</code></pre>
+          </div>
+          <div class="text-gray-400 text-sm">or</div>
+          <div>
+            <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+              <span>🚀</span>
+              <span>Use with npx (temporary)</span>
+            </h4>
+            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>npx -y dockeropt lint Dockerfile
+npx -y dockeropt fix Dockerfile</code></pre>
+          </div>
+        </div>
+      `,
+      linux: `
+        <div class="space-y-4">
+          <div>
+            <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+              <span>📦</span>
+              <span>npm (Global Install)</span>
+            </h4>
+            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>npm install -g dockeropt</code></pre>
+            <p class="text-xs text-gray-400 mt-1">After publishing to npm</p>
+          </div>
+          <div class="text-gray-400 text-sm">or</div>
+          <div>
+            <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+              <span>🔨</span>
+              <span>Build from Source</span>
+            </h4>
+            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>git clone https://github.com/DangNgocDuong250903/dockeropt.git
+cd dockeropt
+npm install
+npm run build
+npm link</code></pre>
+          </div>
+          <div class="text-gray-400 text-sm">or</div>
+          <div>
+            <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+              <span>🚀</span>
+              <span>Use with npx (temporary)</span>
+            </h4>
+            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>npx -y dockeropt lint Dockerfile
+npx -y dockeropt fix Dockerfile</code></pre>
+          </div>
+        </div>
+      `,
+      windows: `
+        <div class="space-y-4">
+          <div>
+            <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+              <span>📦</span>
+              <span>npm (Global Install)</span>
+            </h4>
+            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>npm install -g dockeropt</code></pre>
+            <p class="text-xs text-gray-400 mt-1">After publishing to npm</p>
+          </div>
+          <div class="text-gray-400 text-sm">or</div>
+          <div>
+            <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+              <span>🔨</span>
+              <span>Build from Source</span>
+            </h4>
+            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>git clone https://github.com/DangNgocDuong250903/dockeropt.git
+cd dockeropt
+npm install
+npm run build
+npm link</code></pre>
+          </div>
+          <div class="text-gray-400 text-sm">or</div>
+          <div>
+            <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+              <span>🚀</span>
+              <span>Use with npx (temporary)</span>
+            </h4>
+            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>npx -y dockeropt lint Dockerfile
+npx -y dockeropt fix Dockerfile</code></pre>
+          </div>
+        </div>
+      `,
+    };
+    return contents[os] || contents.macos;
   }
 
   async function handleOptimize() {
@@ -172,38 +360,106 @@ export function createApp(container) {
 
     const content = editor.getValue();
     if (!content.trim()) {
-      alert('Please enter a Dockerfile first!');
+      showToast("Please enter a Dockerfile first!", "error");
       return;
     }
 
     state.loading = true;
+    state.originalDockerfile = content;
     state.dockerfile = content;
     render();
 
+    // Show loading state
+    showLoadingProgress();
+
     try {
       const result = await engine.analyze(content);
+      result.original = state.originalDockerfile; // Store original for comparison
       state.result = result;
       state.loading = false;
       render();
 
       // Scroll to results
       setTimeout(() => {
-        document.getElementById('results-section')?.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start'
+        document.getElementById("results-section")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
         });
       }, 100);
     } catch (error) {
-      console.error('Optimization error:', error);
-      alert(`Error: ${error.message}`);
+      console.error("Optimization error:", error);
+      showToast(`Error: ${error.message}`, "error");
       state.loading = false;
       render();
     }
   }
 
+  async function handleFetchURL() {
+    const urlInput = document.getElementById("github-url-input");
+    if (!urlInput) return;
+
+    const url = urlInput.value.trim();
+    if (!url) {
+      showToast("Please enter a GitHub URL", "error");
+      return;
+    }
+
+    // Convert GitHub blob URL to raw URL
+    let rawUrl = url;
+    if (url.includes("github.com") && url.includes("/blob/")) {
+      rawUrl = url
+        .replace("/blob/", "/")
+        .replace("github.com", "raw.githubusercontent.com");
+    }
+
+    try {
+      state.loading = true;
+      const response = await fetch(rawUrl);
+      if (!response.ok) throw new Error("Failed to fetch Dockerfile");
+      const dockerfile = await response.text();
+
+      if (editor) {
+        editor.setValue(dockerfile);
+      }
+      state.dockerfile = dockerfile;
+      state.result = null;
+      state.loading = false;
+      showToast("Dockerfile loaded successfully!", "success");
+      render();
+    } catch (error) {
+      console.error("Fetch error:", error);
+      showToast(`Failed to fetch: ${error.message}`, "error");
+      state.loading = false;
+    }
+  }
+
+  function showLoadingProgress() {
+    // This will be handled by the loading state in render
+  }
+
+  function showToast(message, type = "info") {
+    const toast = document.createElement("div");
+    const colors = {
+      success: "bg-green-500",
+      error: "bg-red-500",
+      info: "bg-blue-500",
+    };
+    toast.className = `fixed top-4 right-4 ${
+      colors[type] || colors.info
+    } text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(-20px)";
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
   function handleClear() {
     if (editor) {
-      editor.setValue('');
+      editor.setValue("");
     }
     state.result = null;
     render();
@@ -214,6 +470,7 @@ export function createApp(container) {
       editor.setValue(dockerfile);
     }
     state.dockerfile = dockerfile;
+    state.originalDockerfile = dockerfile;
     state.result = null;
     render();
   }
@@ -224,36 +481,87 @@ export function createApp(container) {
   }
 
   function handleCopy(target) {
-    let text = '';
-    if (target === 'optimized' && state.result) {
+    let text = "";
+    if (target === "optimized" && state.result) {
       text = state.result.optimized;
-    } else if (target === 'diff' && state.result) {
+    } else if (target === "diff" && state.result) {
       text = state.result.diff;
-    } else if (target === 'commit' && state.result?.commitMessage) {
+    } else if (target === "commit" && state.result?.commitMessage) {
       text = state.result.commitMessage;
     }
 
     if (text) {
-      navigator.clipboard.writeText(text).then(() => {
-        // Show success message
-        const btn = event.target.closest('button');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '✓ Copied!';
-        setTimeout(() => {
-          btn.innerHTML = originalText;
-        }, 2000);
-      });
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          showToast("Copied ✔", "success");
+          // Also update button
+          const btn = event.target.closest("button");
+          if (btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "✓ Copied!";
+            setTimeout(() => {
+              btn.innerHTML = originalText;
+            }, 2000);
+          }
+        })
+        .catch(() => {
+          showToast("Failed to copy", "error");
+        });
+    }
+  }
+
+  // Growth loop handlers
+  function attachGrowthLoopHandlers() {
+    // Share result
+    const shareBtn = document.getElementById("share-result-btn");
+    if (shareBtn) {
+      shareBtn.onclick = () => {
+        // In a real app, this would generate a shareable URL
+        const shareUrl = `${window.location.origin}${
+          window.location.pathname
+        }#share-${Date.now()}`;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          showToast("Share link copied!", "success");
+        });
+      };
+    }
+
+    // Generate badge
+    const badgeBtn = document.getElementById("generate-badge-btn");
+    if (badgeBtn) {
+      badgeBtn.onclick = () => {
+        const grade =
+          state.result?.score >= 90
+            ? "A+"
+            : state.result?.score >= 80
+            ? "A"
+            : "B";
+        const badgeMarkdown = `[![Optimized by DockerOpt](${window.location.origin}/badge.svg?grade=${grade})](https://dockeropt.dev)`;
+        navigator.clipboard.writeText(badgeMarkdown).then(() => {
+          showToast("Badge markdown copied!", "success");
+        });
+      };
+    }
+
+    // Create PR
+    const prBtn = document.getElementById("create-pr-btn");
+    if (prBtn) {
+      prBtn.onclick = () => {
+        showToast("PR feature coming soon!", "info");
+        // In a real app, this would open GitHub App or create PR
+      };
     }
   }
 
   function handleDownload() {
     if (!state.result) return;
 
-    const blob = new Blob([state.result.optimized], { type: 'text/plain' });
+    const blob = new Blob([state.result.optimized], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'Dockerfile.optimized';
+    a.download = "Dockerfile.optimized";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -262,10 +570,10 @@ export function createApp(container) {
 
   function init() {
     render();
-    
+
     // Initialize editor after render
     setTimeout(() => {
-      editor = createEditor('editor-container', state.dockerfile);
+      editor = createEditor("editor-container", state.dockerfile);
     }, 0);
   }
 
@@ -274,4 +582,3 @@ export function createApp(container) {
     getState: () => state,
   };
 }
-

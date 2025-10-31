@@ -2,6 +2,12 @@
   "name": "dockeropt-web",
   "version": "1.0.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DangNgocDuong250903/dockeropt.git",
+    "directory": "web"
+  },
+  "homepage": "https://github.com/DangNgocDuong250903/dockeropt#readme",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

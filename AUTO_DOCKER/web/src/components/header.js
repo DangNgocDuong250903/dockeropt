@@ -19,7 +19,7 @@ export function renderHeader() {
               How it works
             </a>
             <a 
-              href="https://github.com/dockeropt/dockeropt" 
+              href="https://github.com/DangNgocDuong250903/dockeropt" 
               target="_blank"
               rel="noopener noreferrer"
               class="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition"
@@ -30,9 +30,7 @@ export function renderHeader() {
               GitHub
             </a>
             <a 
-              href="https://www.npmjs.com/package/dockeropt" 
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#install-section" 
               class="btn-primary text-sm"
             >
               Install CLI

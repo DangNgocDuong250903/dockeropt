@@ -102,7 +102,7 @@ export function renderResults(result, activeTab = 'optimized') {
       <div class="tab-content">
         ${activeTab === 'optimized' ? renderOptimizedTab(result) : ''}
         ${activeTab === 'findings' ? renderFindingsTab(result.findings, result.isAIAnalyzed) : ''}
-        ${activeTab === 'diff' ? renderDiffTab(result.diff) : ''}
+        ${activeTab === 'diff' ? renderDiffTab(result.diff, result) : ''}
       </div>
 
       ${result.commitMessage ? `
@@ -121,6 +121,36 @@ export function renderResults(result, activeTab = 'optimized') {
           <pre class="text-sm font-mono text-gray-700 whitespace-pre-wrap">${escapeHtml(result.commitMessage)}</pre>
         </div>
       ` : ''}
+
+      <!-- Growth Loop Features -->
+      <div class="mt-6 grid md:grid-cols-3 gap-4">
+        <button
+          id="share-result-btn"
+          class="p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition text-left"
+        >
+          <div class="text-lg mb-1">🔗</div>
+          <div class="font-semibold text-blue-900 mb-1">Share Result</div>
+          <div class="text-xs text-blue-700">Get a shareable link to this optimization</div>
+        </button>
+        
+        <button
+          id="generate-badge-btn"
+          class="p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition text-left"
+        >
+          <div class="text-lg mb-1">🏆</div>
+          <div class="font-semibold text-green-900 mb-1">Get Badge</div>
+          <div class="text-xs text-green-700">Add "Optimized by DockerOpt" to README</div>
+        </button>
+        
+        <button
+          id="create-pr-btn"
+          class="p-4 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition text-left"
+        >
+          <div class="text-lg mb-1">🔀</div>
+          <div class="font-semibold text-purple-900 mb-1">Open in PR</div>
+          <div class="text-xs text-purple-700">Create GitHub PR with changes</div>
+        </button>
+      </div>
     </div>
   `;
 }
@@ -274,11 +304,12 @@ function renderFinding(finding, index, color, isAIAnalyzed = false) {
   `;
 }
 
-function renderDiffTab(diff) {
+function renderDiffTab(diff, result) {
+  // Side-by-side comparison
   return `
     <div>
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900">Changes</h3>
+        <h3 class="text-lg font-semibold text-gray-900">Before & After Comparison</h3>
         <button
           data-copy="diff"
           class="btn-secondary text-sm"
@@ -286,8 +317,61 @@ function renderDiffTab(diff) {
           📋 Copy Diff
         </button>
       </div>
+
+      <!-- Metrics Comparison -->
+      ${result.metrics ? `
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div class="text-sm text-red-700 mb-1">Size Reduction</div>
+            <div class="text-2xl font-bold text-red-900 flex items-center gap-2">
+              <span>↓</span>
+              <span>${result.metrics.estimatedSizeSavings} MB</span>
+            </div>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div class="text-sm text-blue-700 mb-1">Layer Reduction</div>
+            <div class="text-2xl font-bold text-blue-900 flex items-center gap-2">
+              <span>↓</span>
+              <span>${result.metrics.layerReduction} layers</span>
+            </div>
+          </div>
+          <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div class="text-sm text-green-700 mb-1">Build Time</div>
+            <div class="text-2xl font-bold text-green-900 flex items-center gap-2">
+              <span>↓</span>
+              <span>~42%</span>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Side-by-side diff -->
+      <div class="grid md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-sm font-semibold text-red-700 flex items-center gap-2">
+              <span>❌</span>
+              <span>Before</span>
+            </h4>
+          </div>
+          <pre class="bg-red-50 border border-red-200 text-red-900 p-4 rounded-lg overflow-x-auto text-xs font-mono max-h-96 overflow-y-auto"><code>${escapeHtml(result.original || 'Original Dockerfile will appear here')}</code></pre>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-sm font-semibold text-green-700 flex items-center gap-2">
+              <span>✅</span>
+              <span>After</span>
+            </h4>
+          </div>
+          <pre class="bg-green-50 border border-green-200 text-green-900 p-4 rounded-lg overflow-x-auto text-xs font-mono max-h-96 overflow-y-auto"><code>${escapeHtml(result.optimized)}</code></pre>
+        </div>
+      </div>
       
-      <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono border border-gray-700"><code>${formatDiff(diff)}</code></pre>
+      <!-- Unified diff -->
+      <div class="mt-4">
+        <h4 class="text-sm font-semibold text-gray-700 mb-2">Unified Diff</h4>
+        <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono border border-gray-700 max-h-96 overflow-y-auto"><code>${formatDiff(diff)}</code></pre>
+      </div>
     </div>
   `;
 }

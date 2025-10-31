@@ -17,6 +17,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-  }
+  },
+  // Load env variables
+  envPrefix: 'VITE_',
 })
 
