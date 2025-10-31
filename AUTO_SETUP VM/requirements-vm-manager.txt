@@ -1,4 +1,0 @@
-click>=8.1.0
-rich>=13.0.0
-paramiko>=3.0.0
-
