@@ -21,7 +21,7 @@
 
 ### Web Interface (Recommended)
 
-Visit the [web interface](https://github.com/DangNgocDuong250903/dockeropt) for instant optimization:
+Visit the [web interface](http://35.216.50.137/) for instant optimization:
 
 1. Paste your Dockerfile
 2. Click "Optimize"
