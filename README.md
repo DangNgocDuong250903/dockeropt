@@ -16,12 +16,18 @@
 - 🌐 **Web Interface** - Beautiful web UI for instant Dockerfile optimization
 - 🛠️ **CLI Tool** - Command-line tool for CI/CD integration
 - 📝 **Multiple Formats** - Support for text, JSON, Markdown, and SARIF output formats
+- 🧬 **Image Inspector** - Deep dive into Docker image layers (like Dive)
+- 🔄 **Build Replay** - Visual timeline of Docker build process with cache analysis
+- 🧠 **Layer AI** - AI-powered layer behavior analysis and optimization suggestions
+- ⚙️ **Config Wizard** - Interactive wizard for Docker configuration optimization
+- 🔎 **Secret Detection** - Automatically detect secrets and sensitive data
+- 📈 **Layer DNA Compare** - Visual comparison of image layer composition
 
 ## 🚀 Quick Start
 
 ### Web Interface (Recommended)
 
-Visit the [web interface](http://35.216.50.137/) for instant optimization:
+Visit the [web interface](https://dockeropt.duongtech.me/) for instant optimization:
 
 1. Paste your Dockerfile
 2. Click "Optimize"
@@ -188,6 +194,10 @@ The web interface provides:
 - 🔗 **GitHub Integration** - Fetch Dockerfiles directly from GitHub URLs
 - 🌍 **Multi-language Examples** - Node, Go, Python, Java examples
 - 📋 **One-Click Copy** - Copy optimized Dockerfile instantly
+- 🧬 **Image Analysis** - Inspect and analyze existing Docker images
+- 🔄 **Build Timeline** - Visualize build process with cache efficiency
+- 🧠 **AI Suggestions** - Get intelligent layer optimization recommendations
+- ⚙️ **Interactive Wizard** - Step-by-step Docker configuration guide
 
 ### Setup Web Interface
 
