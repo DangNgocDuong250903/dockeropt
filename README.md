@@ -3,7 +3,7 @@
 > Free and open-source Dockerfile optimizer that helps you build smaller, faster, and more secure Docker images.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/DangNgocDuong250903/dockeropt)](https://github.com/DangNgocDuong250903/dockeropt)
+[![GitHub stars](https://img.shields.io/github/stars/duongtech/dockeropt)](https://github.com/DangNgocDuong250903/dockeropt)
 [![npm version](https://img.shields.io/npm/v/dockeropt)](https://www.npmjs.com/package/dockeropt)
 
 ## ✨ Features
@@ -38,7 +38,7 @@ Visit the [web interface](https://dockeropt.duongtech.me/) for instant optimizat
 #### Option 1: Build from Source
 
 ```bash
-git clone https://github.com/DangNgocDuong250903/dockeropt.git
+git clone https://github.com/duongtech/dockeropt.git
 cd dockeropt
 npm install
 npm run build
@@ -329,8 +329,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 🐛 **Issues**: [GitHub Issues](https://github.com/DangNgocDuong250903/dockeropt/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/DangNgocDuong250903/dockeropt/discussions)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/duongtech/dockeropt/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/duongtech/dockeropt/discussions)
 - 📧 **Contact**: Open an issue on GitHub
 
 ## ⭐ Star History
@@ -339,5 +339,5 @@ If you find DockerOpt useful, please consider giving it a star on GitHub!
 
 ---
 
-Made with ❤️ by [Đặng Ngọc Dương](https://github.com/DangNgocDuong250903)
+Made with ❤️ by [Đặng Ngọc Dương](https://github.com/duongtech)
 
