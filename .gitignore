@@ -9,3 +9,4 @@ coverage/
 .history/
 .vscode/
 .idea/
+deploy.ps1

@@ -95,6 +95,18 @@ export function renderResults(result, activeTab = 'optimized') {
           >
             📝 Diff
           </button>
+          ${result.runtimeManifest ? `
+          <button
+            data-tab="runtime"
+            class="px-4 py-2 font-medium text-sm border-b-2 transition ${
+              activeTab === 'runtime'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }"
+          >
+            ⚡ Runtime Info
+          </button>
+          ` : ''}
         </nav>
       </div>
 
@@ -103,6 +115,7 @@ export function renderResults(result, activeTab = 'optimized') {
         ${activeTab === 'optimized' ? renderOptimizedTab(result) : ''}
         ${activeTab === 'findings' ? renderFindingsTab(result.findings, result.isAIAnalyzed) : ''}
         ${activeTab === 'diff' ? renderDiffTab(result.diff, result) : ''}
+        ${activeTab === 'runtime' && result.runtimeManifest ? renderRuntimeTab(result.runtimeManifest) : ''}
       </div>
 
       ${result.commitMessage ? `
@@ -390,6 +403,109 @@ function formatDiff(diff) {
       return `<span class="text-gray-400">${line}</span>`;
     })
     .join('\n');
+}
+
+function renderRuntimeTab(manifest) {
+  return `
+    <div>
+      <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">⚡ Runtime Behavior Prediction</h3>
+        
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div>
+            <div class="text-sm text-gray-600 mb-1">App Type</div>
+            <div class="text-lg font-semibold text-gray-900">${manifest.appType}</div>
+          </div>
+          
+          ${manifest.defaultPort ? `
+            <div>
+              <div class="text-sm text-gray-600 mb-1">Default Port</div>
+              <div class="text-lg font-semibold text-gray-900">${manifest.defaultPort}</div>
+            </div>
+          ` : ''}
+          
+          <div>
+            <div class="text-sm text-gray-600 mb-1">Expected Memory</div>
+            <div class="text-lg font-semibold text-gray-900">${manifest.expectedMemory}</div>
+          </div>
+          
+          <div>
+            <div class="text-sm text-gray-600 mb-1">Expected CPU</div>
+            <div class="text-lg font-semibold text-gray-900">${manifest.expectedCPU}</div>
+          </div>
+        </div>
+      </div>
+      
+      ${manifest.exposedPorts.length > 0 ? `
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">🌐 Exposed Ports</h4>
+          <div class="flex flex-wrap gap-2">
+            ${manifest.exposedPorts.map(port => `
+              <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                ${port}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+      
+      ${manifest.volumes.length > 0 ? `
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">💾 Volumes</h4>
+          <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+            ${manifest.volumes.map(vol => `<li>${escapeHtml(vol)}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+      
+      ${Object.keys(manifest.environment).length > 0 ? `
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">🔧 Environment Variables</h4>
+          <div class="bg-gray-50 rounded-lg p-3 overflow-x-auto">
+            <pre class="text-xs font-mono text-gray-700"><code>${Object.entries(manifest.environment).map(([key, val]) => `${key}=${val}`).join('\n')}</code></pre>
+          </div>
+        </div>
+      ` : ''}
+      
+      ${manifest.entrypoint ? `
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">🚀 Entrypoint</h4>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <code class="text-sm font-mono text-gray-700">${escapeHtml(manifest.entrypoint)}</code>
+          </div>
+        </div>
+      ` : ''}
+      
+      ${manifest.command ? `
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">▶️ Command</h4>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <code class="text-sm font-mono text-gray-700">${escapeHtml(manifest.command)}</code>
+          </div>
+        </div>
+      ` : ''}
+      
+      ${manifest.healthCheck ? `
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">❤️ Health Check</h4>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <code class="text-sm font-mono text-gray-700">${escapeHtml(manifest.healthCheck)}</code>
+          </div>
+        </div>
+      ` : ''}
+      
+      <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <h4 class="text-sm font-semibold text-green-900 mb-2">📋 Runtime Manifest (JSON)</h4>
+        <button
+          data-copy="runtime-manifest"
+          class="btn-secondary text-xs mb-2"
+        >
+          📋 Copy JSON
+        </button>
+        <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-xs font-mono border border-gray-700"><code>${escapeHtml(JSON.stringify(manifest, null, 2))}</code></pre>
+      </div>
+    </div>
+  `;
 }
 
 function escapeHtml(text) {

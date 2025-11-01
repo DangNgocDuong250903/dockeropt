@@ -8,11 +8,34 @@ import { renderEditor } from "./components/editor.js";
 import { renderResults } from "./components/results.js";
 import { renderExamples, EXAMPLES } from "./components/examples.js";
 import { renderFooter } from "./components/footer.js";
+import {
+  renderImageInspector,
+  renderImageAnalysis,
+} from "./components/image-inspector.js";
+import {
+  renderImageComparator,
+  renderComparisonResults,
+} from "./components/image-comparator.js";
+import { ImageInspector } from "./image-inspector.js";
+import { ImageComparator } from "./image-comparator.js";
+import {
+  renderLayerGraph,
+  renderComparisonGraph,
+} from "./components/layer-graph.js";
+import { renderLayerDNACompare } from "./components/layer-dna-compare.js";
+import {
+  renderConfigWizard,
+  attachConfigWizardHandlers,
+} from "./components/config-wizard.js";
 
 export function createApp(container) {
   // Initialize with AI support
   const geminiAnalyzer = new GeminiAnalyzer();
   const engine = new DockerfileOptimizerEngine(true, geminiAnalyzer);
+
+  // Initialize Image Inspector and Comparator
+  const imageInspector = new ImageInspector();
+  const imageComparator = new ImageComparator();
 
   let editor = null;
   let state = {
@@ -24,6 +47,7 @@ export function createApp(container) {
     showExplanation: null, // Track which finding is showing explanation
     activeLang: "node", // Current language tab
     originalDockerfile: "", // Store original for comparison
+    activeView: "optimizer", // 'optimizer' | 'inspector' | 'comparator' | 'config'
   };
 
   function render() {
@@ -57,65 +81,96 @@ export function createApp(container) {
           </div>
         </div>
 
-        <!-- Examples -->
-        ${renderExamples({})}
-
-        <!-- Editor Section -->
-        <div class="mt-12">
-          <div class="card p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-semibold text-gray-900">
-                📝 Your Dockerfile
-              </h2>
-              <div class="flex gap-2 items-center">
-                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    id="ai-toggle"
-                    ${state.useAI ? "checked" : ""}
-                    class="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                  >
-                  <span class="flex items-center gap-1">
-                    <span>✨</span>
-                    <span>AI Analysis</span>
-                  </span>
-                </label>
-                <button 
-                  id="clear-btn"
-                  class="btn-secondary text-sm"
-                >
-                  Clear
-                </button>
-                <button 
-                  id="optimize-btn"
-                  class="btn-primary text-sm"
-                  ${state.loading ? "disabled" : ""}
-                >
-                  ${
-                    state.loading
-                      ? `
-                    <span class="flex items-center gap-2">
-                      <span class="animate-spin">⏳</span>
-                      <span>Analyzing layers...</span>
-                    </span>
-                  `
-                      : "🚀 Optimize"
-                  }
-                </button>
-              </div>
-            </div>
-            
-            ${renderEditor()}
-          </div>
-        </div>
-
-        <!-- Results Section -->
+        <!-- View Container -->
         ${
-          state.result
+          state.activeView === "optimizer"
             ? `
-          <div class="mt-8" id="results-section">
-            ${renderResults(state.result, state.activeTab)}
+          <!-- Examples -->
+          ${renderExamples({})}
+
+          <!-- Editor Section -->
+          <div class="mt-12">
+            <div class="card p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">
+                  📝 Your Dockerfile
+                </h2>
+                <div class="flex gap-2 items-center">
+                  <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      id="ai-toggle"
+                      ${state.useAI ? "checked" : ""}
+                      class="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                    >
+                    <span class="flex items-center gap-1">
+                      <span>✨</span>
+                      <span>AI Analysis</span>
+                    </span>
+                  </label>
+                  <button 
+                    id="clear-btn"
+                    class="btn-secondary text-sm"
+                  >
+                    Clear
+                  </button>
+                  <button 
+                    id="optimize-btn"
+                    class="btn-primary text-sm"
+                    ${state.loading ? "disabled" : ""}
+                  >
+                    ${
+                      state.loading
+                        ? `
+                      <span class="flex items-center gap-2">
+                        <span class="animate-spin">⏳</span>
+                        <span>Analyzing layers...</span>
+                      </span>
+                    `
+                        : "🚀 Optimize"
+                    }
+                  </button>
+                </div>
+              </div>
+              
+              ${renderEditor()}
+            </div>
           </div>
+          
+          <!-- Results Section -->
+          ${
+            state.result
+              ? `
+            <div class="mt-8" id="results-section">
+              ${renderResults(state.result, state.activeTab)}
+            </div>
+          `
+              : ""
+          }
+        `
+            : ""
+        }
+        
+        ${
+          state.activeView === "inspector"
+            ? `
+          <div id="image-inspector-container"></div>
+        `
+            : ""
+        }
+        
+        ${
+          state.activeView === "comparator"
+            ? `
+          <div id="image-comparator-container"></div>
+        `
+            : ""
+        }
+        
+        ${
+          state.activeView === "config"
+            ? `
+          <div id="config-wizard-container"></div>
         `
             : ""
         }
@@ -127,13 +182,74 @@ export function createApp(container) {
     container.innerHTML = html;
     attachEventListeners();
 
-    // Attach growth loop handlers after render
-    setTimeout(() => {
+    // Render view-specific content
+    if (state.activeView === "inspector") {
+      renderImageInspector("image-inspector-container");
+      attachInspectorHandlers();
+    } else if (state.activeView === "comparator") {
+      renderImageComparator("image-comparator-container");
+      attachComparatorHandlers();
+    } else if (state.activeView === "config") {
+      renderConfigWizard("config-wizard-container");
+      attachConfigWizardHandlers();
+    } else if (state.activeView === "optimizer") {
+      // Initialize editor for optimizer view - use requestAnimationFrame for smoother rendering
+      requestAnimationFrame(() => {
+        const editorContainer = document.getElementById("editor-container");
+        if (editorContainer && !editor) {
+          editor = createEditor("editor-container", state.dockerfile);
+        } else if (
+          editorContainer &&
+          editor &&
+          editor.getValue() !== state.dockerfile
+        ) {
+          // Only update if content changed to prevent unnecessary re-renders
+          editor.setValue(state.dockerfile);
+        }
+      });
+    }
+
+    // Attach growth loop handlers after render - use requestAnimationFrame
+    requestAnimationFrame(() => {
       attachGrowthLoopHandlers();
-    }, 0);
+    });
   }
 
   function attachEventListeners() {
+    // Navigation tabs
+    const navTabs = document.querySelectorAll("[data-view]");
+    navTabs.forEach((tab) => {
+      tab.onclick = () => {
+        const view = tab.dataset.view;
+        // Prevent re-render if already on same view
+        if (state.activeView === view) return;
+
+        state.activeView = view;
+
+        // Update tab styles
+        navTabs.forEach((t) => {
+          t.className =
+            "nav-tab text-sm px-3 py-2 rounded-md transition text-gray-600 hover:text-gray-900";
+        });
+        tab.className =
+          "nav-tab text-sm px-3 py-2 rounded-md transition bg-primary-100 text-primary-700 font-semibold";
+
+        // Use requestAnimationFrame for smoother transitions
+        requestAnimationFrame(() => {
+          render();
+        });
+      };
+    });
+
+    // Set initial active tab
+    const activeTab = document.querySelector(
+      `[data-view="${state.activeView}"]`
+    );
+    if (activeTab) {
+      activeTab.className =
+        "nav-tab text-sm px-3 py-2 rounded-md transition bg-primary-100 text-primary-700 font-semibold";
+    }
+
     // AI toggle
     const aiToggle = document.getElementById("ai-toggle");
     if (aiToggle) {
@@ -218,7 +334,7 @@ export function createApp(container) {
     // Copy buttons
     const copyButtons = document.querySelectorAll("[data-copy]");
     copyButtons.forEach((btn) => {
-      btn.onclick = () => handleCopy(btn.dataset.copy);
+      btn.onclick = (e) => handleCopy(btn.dataset.copy, e);
     });
 
     // Download buttons
@@ -262,7 +378,7 @@ export function createApp(container) {
             <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>npm install -g dockeropt</code></pre>
             <p class="text-xs text-gray-400 mt-1">After publishing to npm</p>
           </div>
-          <div class="text-gray-400 text-sm">or</div>
+          <div class="text-gray-400 text-sm">${"or"}</div>
           <div>
             <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
               <span>🔨</span>
@@ -295,7 +411,7 @@ npx -y dockeropt fix Dockerfile</code></pre>
             <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>npm install -g dockeropt</code></pre>
             <p class="text-xs text-gray-400 mt-1">After publishing to npm</p>
           </div>
-          <div class="text-gray-400 text-sm">or</div>
+          <div class="text-gray-400 text-sm">${"or"}</div>
           <div>
             <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
               <span>🔨</span>
@@ -328,7 +444,7 @@ npx -y dockeropt fix Dockerfile</code></pre>
             <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>npm install -g dockeropt</code></pre>
             <p class="text-xs text-gray-400 mt-1">After publishing to npm</p>
           </div>
-          <div class="text-gray-400 text-sm">or</div>
+          <div class="text-gray-400 text-sm">${"or"}</div>
           <div>
             <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
               <span>🔨</span>
@@ -367,17 +483,23 @@ npx -y dockeropt fix Dockerfile</code></pre>
     state.loading = true;
     state.originalDockerfile = content;
     state.dockerfile = content;
-    render();
 
-    // Show loading state
-    showLoadingProgress();
+    // Use requestAnimationFrame for smoother render
+    requestAnimationFrame(() => {
+      render();
+      // Show loading state
+      showLoadingProgress();
+    });
 
     try {
       const result = await engine.analyze(content);
       result.original = state.originalDockerfile; // Store original for comparison
       state.result = result;
       state.loading = false;
-      render();
+
+      requestAnimationFrame(() => {
+        render();
+      });
 
       // Scroll to results
       setTimeout(() => {
@@ -480,7 +602,7 @@ npx -y dockeropt fix Dockerfile</code></pre>
     render();
   }
 
-  function handleCopy(target) {
+  function handleCopy(target, event = null) {
     let text = "";
     if (target === "optimized" && state.result) {
       text = state.result.optimized;
@@ -488,14 +610,60 @@ npx -y dockeropt fix Dockerfile</code></pre>
       text = state.result.diff;
     } else if (target === "commit" && state.result?.commitMessage) {
       text = state.result.commitMessage;
+    } else if (target === "runtime-manifest" && state.result?.runtimeManifest) {
+      text = JSON.stringify(state.result.runtimeManifest, null, 2);
     }
 
-    if (text) {
+    if (!text) {
+      showToast("Nothing to copy", "error");
+      return;
+    }
+
+    // Try clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard
         .writeText(text)
         .then(() => {
           showToast("Copied ✔", "success");
-          // Also update button
+          // Update button if event is available
+          if (event) {
+            const btn = event.target.closest("button");
+            if (btn) {
+              const originalText = btn.innerHTML;
+              btn.innerHTML = "✓ Copied!";
+              setTimeout(() => {
+                btn.innerHTML = originalText;
+              }, 2000);
+            }
+          }
+        })
+        .catch((err) => {
+          console.error("Clipboard error:", err);
+          // Fallback to textarea method
+          fallbackCopy(text, event);
+        });
+    } else {
+      // Fallback for browsers without clipboard API
+      fallbackCopy(text, event);
+    }
+  }
+
+  function fallbackCopy(text, event) {
+    // Create temporary textarea
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-999999px";
+    textarea.style.top = "-999999px";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+      const successful = document.execCommand("copy");
+      if (successful) {
+        showToast("Copied ✔", "success");
+        if (event) {
           const btn = event.target.closest("button");
           if (btn) {
             const originalText = btn.innerHTML;
@@ -504,10 +672,15 @@ npx -y dockeropt fix Dockerfile</code></pre>
               btn.innerHTML = originalText;
             }, 2000);
           }
-        })
-        .catch(() => {
-          showToast("Failed to copy", "error");
-        });
+        }
+      } else {
+        showToast("Failed to copy. Please copy manually.", "error");
+      }
+    } catch (err) {
+      console.error("Fallback copy error:", err);
+      showToast("Failed to copy. Please copy manually.", "error");
+    } finally {
+      document.body.removeChild(textarea);
     }
   }
 
@@ -568,12 +741,149 @@ npx -y dockeropt fix Dockerfile</code></pre>
     URL.revokeObjectURL(url);
   }
 
+  function attachInspectorHandlers() {
+    const analyzeBtn = document.getElementById("analyze-image-btn");
+    if (analyzeBtn) {
+      analyzeBtn.onclick = handleAnalyzeImage;
+    }
+  }
+
+  function attachComparatorHandlers() {
+    const compareBtn = document.getElementById("compare-images-btn");
+    if (compareBtn) {
+      compareBtn.onclick = handleCompareImages;
+    }
+  }
+
+  async function handleAnalyzeImage() {
+    const inspectInput = document.getElementById("inspect-json-input");
+    const historyInput = document.getElementById("history-json-input");
+
+    if (!inspectInput?.value.trim()) {
+      alert("Please paste Docker inspect JSON");
+      return;
+    }
+
+    try {
+      const imageInfo = imageInspector.parseInspect(inspectInput.value);
+
+      // Merge history if provided
+      if (historyInput?.value.trim()) {
+        try {
+          const history = imageInspector.parseHistory(historyInput.value);
+          if (history && history.length > 0) {
+            imageInfo.layers = imageInfo.layers.map((layer, index) => ({
+              ...layer,
+              ...(history[index] || {}),
+            }));
+          }
+        } catch (error) {
+          console.warn(
+            "Failed to parse history, continuing without it:",
+            error
+          );
+        }
+      }
+
+      const analyses = imageInspector.analyzeLayers(imageInfo);
+      const efficiencyScore = imageInspector.calculateEfficiencyScore(analyses);
+      const graphData = imageInspector.generateLayerGraph(imageInfo);
+
+      renderImageAnalysis(imageInfo, analyses, efficiencyScore, graphData);
+
+      // Make renderLayerGraph available globally
+      window.renderLayerGraph = (data, containerId) => {
+        renderLayerGraph(data, containerId);
+      };
+    } catch (error) {
+      alert(`Error analyzing image: ${error.message}`);
+      console.error(error);
+    }
+  }
+
+  async function handleCompareImages() {
+    const image1Inspect = document.getElementById("image1-inspect-input");
+    const image1History = document.getElementById("image1-history-input");
+    const image2Inspect = document.getElementById("image2-inspect-input");
+    const image2History = document.getElementById("image2-history-input");
+
+    if (!image1Inspect?.value.trim() || !image2Inspect?.value.trim()) {
+      alert("Please paste Docker inspect JSON for both images");
+      return;
+    }
+
+    try {
+      const image1 = imageInspector.parseInspect(image1Inspect.value);
+      const image2 = imageInspector.parseInspect(image2Inspect.value);
+
+      if (image1History?.value.trim()) {
+        try {
+          const history1 = imageInspector.parseHistory(image1History.value);
+          if (history1 && history1.length > 0) {
+            image1.layers = image1.layers.map((layer, index) => ({
+              ...layer,
+              ...(history1[index] || {}),
+            }));
+          }
+        } catch (error) {
+          console.warn(
+            "Failed to parse image1 history, continuing without it:",
+            error
+          );
+        }
+      }
+
+      if (image2History?.value.trim()) {
+        try {
+          const history2 = imageInspector.parseHistory(image2History.value);
+          if (history2 && history2.length > 0) {
+            image2.layers = image2.layers.map((layer, index) => ({
+              ...layer,
+              ...(history2[index] || {}),
+            }));
+          }
+        } catch (error) {
+          console.warn(
+            "Failed to parse image2 history, continuing without it:",
+            error
+          );
+        }
+      }
+
+      const diff = imageComparator.compare(image1, image2);
+
+      renderComparisonResults(diff);
+
+      // Render comparison graphs
+      const graph1 = imageInspector.generateLayerGraph(image1);
+      const graph2 = imageInspector.generateLayerGraph(image2);
+      renderComparisonGraph(graph1, graph2, "comparison-graph-container");
+
+      // Render LayerDNA Compare
+      setTimeout(() => {
+        if (typeof renderLayerDNACompare === "function") {
+          renderLayerDNACompare(
+            image1,
+            image2,
+            diff,
+            "layerdna-compare-container"
+          );
+        }
+      }, 100);
+    } catch (error) {
+      alert(`Error comparing images: ${error.message}`);
+      console.error(error);
+    }
+  }
+
   function init() {
     render();
 
-    // Initialize editor after render
+    // Initialize editor after render (only for optimizer view)
     setTimeout(() => {
-      editor = createEditor("editor-container", state.dockerfile);
+      if (state.activeView === "optimizer") {
+        editor = createEditor("editor-container", state.dockerfile);
+      }
     }, 0);
   }
 

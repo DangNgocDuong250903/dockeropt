@@ -3,6 +3,8 @@
  * Simplified version for web demo
  */
 
+import { RuntimePredictor } from './runtime-predictor.js';
+
 export class DockerfileParser {
   parse(content) {
     const lines = content.split('\n');
@@ -246,6 +248,7 @@ export class DockerfileOptimizerEngine {
     this.parser = new DockerfileParser();
     this.analyzer = new DockerfileAnalyzer();
     this.optimizer = new DockerfileOptimizer();
+    this.runtimePredictor = new RuntimePredictor();
     this.useAI = useAI;
     this.geminiAnalyzer = geminiAnalyzer;
   }
@@ -290,6 +293,10 @@ export class DockerfileOptimizerEngine {
         securityScore: Math.max(0, 100 - aiResult.metrics?.securityIssuesCount * 15),
       };
 
+      // Generate runtime manifest
+      const ast = this.parser.parse(dockerfile);
+      const runtimeManifest = this.runtimePredictor.predict(ast);
+
       return {
         original: dockerfile,
         optimized,
@@ -300,6 +307,7 @@ export class DockerfileOptimizerEngine {
         commitMessage: aiResult.commitMessage,
         summary: aiResult.summary,
         isAIAnalyzed: true,
+        runtimeManifest,
       };
     } catch (error) {
       console.error('AI analysis failed, falling back to heuristics:', error);
@@ -326,6 +334,9 @@ export class DockerfileOptimizerEngine {
     // Estimate metrics
     const metrics = this.estimateMetrics(ast, findings);
 
+    // Generate runtime manifest
+    const runtimeManifest = this.runtimePredictor.predict(ast);
+
     return {
       original: dockerfile,
       optimized,
@@ -334,6 +345,7 @@ export class DockerfileOptimizerEngine {
       metrics,
       diff,
       isAIAnalyzed: false,
+      runtimeManifest,
     };
   }
 

@@ -1,136 +1,175 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
-
+/* Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply font-sans antialiased;
-  }
-  
-  ::-webkit-scrollbar {
-    @apply w-2 h-2;
-  }
-  
-  ::-webkit-scrollbar-track {
-    @apply bg-gray-100;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 rounded-full;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400;
-  }
-}
-
+/* Custom components */
 @layer components {
-  .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
-  }
-  
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors;
   }
   
   .btn-secondary {
-    @apply btn bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-500;
+    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200;
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm;
   }
   
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  .nav-tab {
+    @apply text-sm px-3 py-2 rounded-md transition;
   }
   
-  .badge-red {
-    @apply badge bg-red-100 text-red-800;
-  }
-  
-  .badge-yellow {
-    @apply badge bg-yellow-100 text-yellow-800;
-  }
-  
-  .badge-blue {
-    @apply badge bg-blue-100 text-blue-800;
-  }
-  
-  .badge-green {
-    @apply badge bg-green-100 text-green-800;
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent;
   }
 }
 
-/* Monaco Editor styling */
-.monaco-container {
-  @apply border border-gray-300 rounded-lg overflow-hidden;
+/* Prevent layout shifts */
+* {
+  box-sizing: border-box;
 }
 
-/* Loading animation */
-@keyframes spin {
-  to { transform: rotate(360deg); }
+html {
+  scroll-behavior: smooth;
 }
 
-.animate-spin {
-  animation: spin 1s linear infinite;
+body {
+  overflow-x: hidden;
 }
 
-/* Gradient text */
-.gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-blue-600;
+/* Prevent flash of unstyled content */
+.container,
+.max-w-7xl {
+  min-height: 0;
 }
 
-/* Score meter */
-.score-meter {
-  @apply relative h-3 bg-gray-200 rounded-full overflow-hidden;
+/* Smooth transitions */
+.transition {
+  transition-property: color, background-color, border-color, opacity, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
-.score-fill {
-  @apply absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out;
+/* LayerDNA Compare Animations */
+.dna-node {
+  transition: opacity 0.3s ease, filter 0.3s ease;
+  animation: fadeInScale 0.5s ease-out;
+  will-change: opacity, filter;
 }
 
-/* Toast notifications */
-.toast-enter {
-  animation: toastEnter 0.3s ease-out;
+.dna-node:hover {
+  filter: brightness(1.2);
+  transform: scale(1.05);
+  will-change: transform;
 }
 
-.toast-exit {
-  animation: toastExit 0.3s ease-in;
+.dna-link {
+  animation: drawLine 0.8s ease-out;
 }
 
-@keyframes toastEnter {
+.dna-node-group[data-type="new"] .dna-node {
+  animation: pulseGreen 2s ease-in-out infinite;
+}
+
+.dna-node-group[data-type="removed"] .dna-node {
+  animation: pulseRed 2s ease-in-out infinite;
+}
+
+.dna-node-group[data-type="reused"] .dna-node {
+  opacity: 0.8;
+}
+
+.dna-node-group[data-type="changed"] .dna-node {
+  animation: pulseYellow 2s ease-in-out infinite;
+}
+
+@keyframes fadeInScale {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: scale(0.9);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 
-@keyframes toastExit {
+@keyframes drawLine {
   from {
-    opacity: 1;
-    transform: translateY(0);
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
   }
   to {
-    opacity: 0;
-    transform: translateY(-20px);
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 0;
   }
 }
 
-/* Skeleton loading */
-.skeleton {
-  @apply animate-pulse bg-gray-200 rounded;
+@keyframes pulseGreen {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  /* Will be implemented based on user preference */
+@keyframes pulseRed {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
+@keyframes pulseYellow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Tooltip styles */
+.tooltip {
+  position: fixed;
+  background-color: #1f2937;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+/* Prevent content jumping */
+#editor-container {
+  min-height: 384px; /* h-96 equivalent */
+}
+
+#results-section {
+  min-height: 0;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Reduce animation on reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

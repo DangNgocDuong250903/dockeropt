@@ -12,6 +12,32 @@ export function renderHeader() {
           </div>
           
           <nav class="flex items-center gap-4">
+            <div class="flex items-center gap-2 border-r border-gray-200 pr-4">
+              <button 
+                data-view="optimizer"
+                class="nav-tab text-sm px-3 py-2 rounded-md transition"
+              >
+                📝 Optimizer
+              </button>
+              <button 
+                data-view="inspector"
+                class="nav-tab text-sm px-3 py-2 rounded-md transition"
+              >
+                🧩 Inspector
+              </button>
+                  <button 
+                    data-view="comparator"
+                    class="nav-tab text-sm px-3 py-2 rounded-md transition"
+                  >
+                    🐳 Compare
+                  </button>
+                  <button 
+                    data-view="config"
+                    class="nav-tab text-sm px-3 py-2 rounded-md transition"
+                  >
+                    ⚙️ Config Wizard
+                  </button>
+                </div>
             <a 
               href="#how-it-works" 
               class="text-sm text-gray-600 hover:text-gray-900 transition"
